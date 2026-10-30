@@ -1,0 +1,10 @@
+const express = require('express');
+const app = express();
+app.use(require('helmet')(), require('cors')(), express.json(), require('morgan')('dev'));
+app.use('/superadmin', require('./routes/superadmin'));
+app.use('/master', require('./routes/master'));
+app.use('/auth', require('./routes/auth'));
+app.use('/data', require('./routes/data'));
+app.use((_req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
+app.use(require('./middlewares/error'));
+module.exports = app;

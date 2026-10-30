@@ -1,0 +1,152 @@
+{
+  "info": {
+    "name": "Multi-Tenant UMS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000" },
+    { "key": "superToken", "value": "" },
+    { "key": "masterToken", "value": "" },
+    { "key": "masterUserToken", "value": "" },
+    { "key": "publicToken", "value": "" },
+    { "key": "dataId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Superadmin",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('superToken', pm.response.json().token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/superadmin/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@test.com\",\n  \"password\": \"Admin@123\"\n}" } }
+        },
+        {
+          "name": "Create Master (acme)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{superToken}}" }], "url": "{{baseUrl}}/superadmin/master",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Acme Corp\",\n  \"email\": \"acme@test.com\",\n  \"password\": \"Acme@123\",\n  \"code\": \"acme\"\n}" } }
+        },
+        {
+          "name": "Create Master (beta)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{superToken}}" }], "url": "{{baseUrl}}/superadmin/master",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Beta Ltd\",\n  \"email\": \"beta@test.com\",\n  \"password\": \"Beta@123\",\n  \"code\": \"beta\"\n}" } }
+        },
+        {
+          "name": "List Masters (cached)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{superToken}}" }], "url": "{{baseUrl}}/superadmin/masters" }
+        }
+      ]
+    },
+    {
+      "name": "Master",
+      "item": [
+        {
+          "name": "Login (acme)",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('masterToken', pm.response.json().token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/master/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"acme@test.com\",\n  \"password\": \"Acme@123\"\n}" } }
+        },
+        {
+          "name": "Create User",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{masterToken}}" }], "url": "{{baseUrl}}/master/user",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"John Acme\",\n  \"email\": \"john@acme.com\",\n  \"password\": \"John@123\"\n}" } }
+        },
+        {
+          "name": "List Users (cached)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{masterToken}}" }], "url": "{{baseUrl}}/master/users" }
+        }
+      ]
+    },
+    {
+      "name": "Master User",
+      "item": [
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('masterUserToken', pm.response.json().token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/master/user/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"john@acme.com\",\n  \"password\": \"John@123\",\n  \"masterCode\": \"acme\"\n}" } }
+        },
+        {
+          "name": "Profile",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{masterUserToken}}" }], "url": "{{baseUrl}}/master/user/profile" }
+        }
+      ]
+    },
+    {
+      "name": "Public User",
+      "item": [
+        {
+          "name": "Signup",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('publicToken', pm.response.json().token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/auth/signup",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Priya Public\",\n  \"email\": \"priya@public.com\",\n  \"password\": \"Priya@123\"\n}" } }
+        },
+        {
+          "name": "Login",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('publicToken', pm.response.json().token);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"priya@public.com\",\n  \"password\": \"Priya@123\"\n}" } }
+        },
+        {
+          "name": "Profile",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{publicToken}}" }], "url": "{{baseUrl}}/auth/profile" }
+        }
+      ]
+    },
+    {
+      "name": "Cross-login checks (expect 401/403)",
+      "item": [
+        {
+          "name": "Public token -> master user profile (403)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{publicToken}}" }], "url": "{{baseUrl}}/master/user/profile" }
+        },
+        {
+          "name": "Master user token -> public profile (403)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{masterUserToken}}" }], "url": "{{baseUrl}}/auth/profile" }
+        },
+        {
+          "name": "Master user creds on public login (401)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/auth/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"john@acme.com\",\n  \"password\": \"John@123\"\n}" } }
+        },
+        {
+          "name": "Master user with wrong tenant code (401)",
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "url": "{{baseUrl}}/master/user/login",
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"john@acme.com\",\n  \"password\": \"John@123\",\n  \"masterCode\": \"beta\"\n}" } }
+        }
+      ]
+    },
+    {
+      "name": "Data CRUD (uses masterUserToken; swap to publicToken to test the public DB)",
+      "item": [
+        {
+          "name": "Create",
+          "event": [{ "listen": "test", "script": { "exec": ["pm.collectionVariables.set('dataId', pm.response.json().data._id);"] } }],
+          "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{masterUserToken}}" }], "url": "{{baseUrl}}/data",
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"First note\",\n  \"description\": \"Stored in tenant_acme\"\n}" } }
+        },
+        {
+          "name": "List (cached)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{masterUserToken}}" }], "url": "{{baseUrl}}/data" }
+        },
+        {
+          "name": "Get by id",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{masterUserToken}}" }], "url": "{{baseUrl}}/data/{{dataId}}" }
+        },
+        {
+          "name": "Update",
+          "request": { "method": "PUT", "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "Authorization", "value": "Bearer {{masterUserToken}}" }], "url": "{{baseUrl}}/data/{{dataId}}",
+            "body": { "mode": "raw", "raw": "{\n  \"title\": \"Updated note\"\n}" } }
+        },
+        {
+          "name": "Public user cannot read it (404)",
+          "request": { "method": "GET", "header": [{ "key": "Authorization", "value": "Bearer {{publicToken}}" }], "url": "{{baseUrl}}/data/{{dataId}}" }
+        },
+        {
+          "name": "Delete",
+          "request": { "method": "DELETE", "header": [{ "key": "Authorization", "value": "Bearer {{masterUserToken}}" }], "url": "{{baseUrl}}/data/{{dataId}}" }
+        }
+      ]
+    }
+  ]
+}
